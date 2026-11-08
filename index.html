@@ -1,5 +1,8 @@
-<!doctype html><html><head><meta charset="utf-8">
-    <title>My Favourite Movies</title>
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Mis Películas Favoritas</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
     <style>
         body { --primary: #6200ee; --secondary: #29b6f6; margin: 0px;}
@@ -38,22 +41,22 @@
 
     <script type="text/javascript">
 
-       // CONSTANTES Y CONFIGURACIÓN TMDb
-       const TMDB_API_KEY = "e0241fcaa51984680dbe02c90fcccd8c";
-       const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
+        // CONSTANTES Y CONFIGURACIÓN DE TMDb
+        const TMDB_API_KEY = "e0241fcaa51984680dbe02c90fcccd8c";
+        const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
 
-       // DATA MODEL
-       let initial_movies = [
-        { title: "Superlópez", director: "Javier Ruiz Caldera", thumbnail: "files/superlopez.png" },
-        { title: "Jurassic Park", director: "Steven Spielberg", thumbnail: "files/jurassicpark.png" },
-        { title: "Interstellar", director: "Christopher Nolan", thumbnail: "files/interstellar.png" }
-       ];
+        // MODELO DE DATOS
+        let initial_movies = [
+            { title: "Superlópez", director: "Javier Ruiz Caldera", thumbnail: "files/superlopez.png" },
+            { title: "Jurassic Park", director: "Steven Spielberg", thumbnail: "files/jurassicpark.png" },
+            { title: "Interstellar", director: "Christopher Nolan", thumbnail: "files/interstellar.png" }
+        ];
 
-       localStorage.my_movies = localStorage.my_movies || JSON.stringify(initial_movies);
+        localStorage.my_movies = localStorage.my_movies || JSON.stringify(initial_movies);
 
-        // VIEWS
+        // VISTAS
         const indexView = (movies) => {
-            let i=0;
+            let i = 0;
             let view = "";
 
             while(i < movies.length) {
@@ -63,45 +66,45 @@
                         <img data-my-id="${i}" src="${movies[i].thumbnail}" onerror="this.src='files/noimage.png'"/>
                    </div>
                    <div class="title">
-                       ${movies[i].title || "<em>No title</em>"}
+                       ${movies[i].title || "<em>Sin título</em>"}
                    </div>
                    <div class="actions">
-                        <button class="show" data-my-id="${i}">Show</button>
-                        <button class="edit" data-my-id="${i}">Edit</button>
-                        <button class="delete" data-my-id="${i}">Delete</button>
+                        <button class="show" data-my-id="${i}">Ver</button>
+                        <button class="edit" data-my-id="${i}">Editar</button>
+                        <button class="delete" data-my-id="${i}">Eliminar</button>
                     </div>
                 </div>\n`;
               i = i + 1;
             };
 
             view += `<div class="actions">
-                        <button class="new">Add</button>
-                        <button class="search-view">Search TMDb</button>
-                        <button class="reset">Reset</button>
+                        <button class="new">Añadir</button>
+                        <button class="search-view">Buscar en TMDb</button>
+                        <button class="reset">Reiniciar</button>
                     </div>`;
 
             return view;
         };
 
         const editView = (i, movie) => {
-            return `<h2>Edit Movie </h2>
+            return `<h2>Editar Película</h2>
                 <div class="field">
-                Title <br>
-                <input type="text" id="title" placeholder="Title" value="${movie.title}">
+                Título <br>
+                <input type="text" id="title" placeholder="Título" value="${movie.title}">
                 </div>
                 <div class="field">
                 Director <br>
                 <input type="text" id="director" placeholder="Director" value="${movie.director}">
                 </div>
                 <div class="field">
-                Thumbnail <br>
-                <input type="text" id="thumbnail" placeholder="Thumbnail URL" value="${movie.thumbnail}">
+                Miniatura <br>
+                <input type="text" id="thumbnail" placeholder="URL de la miniatura" value="${movie.thumbnail}">
                 </div>
                 <div class="actions">
-                    <button class="update" data-my-id="${i}">Update</button>
-                    <button class="index">Back</button>
+                    <button class="update" data-my-id="${i}">Actualizar</button>
+                    <button class="index">Volver</button>
                 </div>`;
-        }
+        };
 
         const showView = (movie) => {
             return `
@@ -109,40 +112,40 @@
                 La película <strong>${movie.title}</strong> fue dirigida por <strong>${movie.director}</strong>.
              </p>
              <div class="actions">
-                <button class="index">Back</button>
+                <button class="index">Volver</button>
              </div>`;
-        }
+        };
 
         const newView = () => {
-            return `<h2>Create Movie</h2>
+            return `<h2>Crear Película</h2>
                 <div class="field">
-                Title <br>
-                <input type="text" id="title" placeholder="Title">
+                Título <br>
+                <input type="text" id="title" placeholder="Título">
                 </div>
                 <div class="field">
                 Director <br>
                 <input type="text" id="director" placeholder="Director">
                 </div>
                 <div class="field">
-                Thumbnail <br>
-                <input type="text" id="thumbnail" placeholder="Thumbnail URL">
+                Miniatura <br>
+                <input type="text" id="thumbnail" placeholder="URL de la miniatura">
                 </div>
                 <div class="actions">
-                    <button class="create">Create</button>
-                    <button class="index">Back</button>
+                    <button class="create">Crear</button>
+                    <button class="index">Volver</button>
                 </div>`;
-        }
+        };
 
         // TAREA 1: Vista de Búsqueda
         const searchView = () => {
-            return `<h2>Search Movie in TMDb</h2>
+            return `<h2>Buscar Película en TMDb</h2>
                 <div class="field">
-                Title to search <br>
-                <input type="text" id="query" placeholder="Enter movie title...">
+                Título a buscar <br>
+                <input type="text" id="query" placeholder="Introduce el título de la película...">
                 </div>
                 <div class="actions">
-                    <button class="search">Search</button>
-                    <button class="index">Back</button>
+                    <button class="search">Buscar</button>
+                    <button class="index">Volver</button>
                 </div>
                 <div id="results"></div>`;
         };
@@ -150,10 +153,10 @@
         // TAREA 3: Vista de Resultados de Búsqueda
         const resultsView = (results) => {
             if (!results || results.length === 0) {
-                return `<p>No movies found matching your search term.</p>`;
+                return `<p>No se encontraron películas que coincidan con tu término de búsqueda.</p>`;
             }
 
-            let view = `<h3>Search Results</h3>`;
+            let view = `<h3>Resultados de la Búsqueda</h3>`;
             let i = 0;
             while (i < results.length) {
                 let m = results[i];
@@ -167,13 +170,13 @@
                         <img src="${poster}" onerror="this.src='files/noimage.png'"/>
                    </div>
                    <div class="title">
-                       ${m.title || "<em>No title</em>"}
+                       ${m.title || "<em>Sin título</em>"}
                    </div>
-                   <p style="font-size:10px; margin:4px 0;">Release: ${release}</p>
+                   <p style="font-size:10px; margin:4px 0;">Estreno: ${release}</p>
                    <div class="actions">
                         <button class="add-from-api" 
                                 data-title="${titleClean}" 
-                                data-thumbnail="${poster}">Add</button>
+                                data-thumbnail="${poster}">Añadir</button>
                     </div>
                 </div>\n`;
                 i = i + 1;
@@ -181,7 +184,7 @@
             return view;
         };
 
-        // CONTROLLERS 
+        // CONTROLADORES 
         const indexContr = () => {
             let my_movies = JSON.parse(localStorage.my_movies);
             document.getElementById('main').innerHTML = indexView(my_movies);
@@ -215,7 +218,7 @@
 
         const updateContr = (i) => {
             let my_movies = JSON.parse(localStorage.my_movies);
-            my_movies[i].title    = document.getElementById('title').value;
+            my_movies[i].title     = document.getElementById('title').value;
             my_movies[i].director  = document.getElementById('director').value;
             my_movies[i].thumbnail = document.getElementById('thumbnail').value;
             localStorage.my_movies = JSON.stringify(my_movies);
@@ -248,18 +251,18 @@
                 return;
             }
 
-            resultsDiv.innerHTML = "<p>Loading results...</p>";
+            resultsDiv.innerHTML = "<p>Cargando resultados...</p>";
 
             try {
                 let url = "https://api.themoviedb.org/3/search/movie?api_key=" + TMDB_API_KEY + "&query=" + encodeURIComponent(query.trim());
                 let response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error("HTTP Status " + response.status);
+                    throw new Error("Estado HTTP " + response.status);
                 }
                 let data = await response.json();
                 resultsDiv.innerHTML = resultsView(data.results);
             } catch (err) {
-                resultsDiv.innerHTML = "<p>Error searching movies: " + err.message + "</p>";
+                resultsDiv.innerHTML = "<p>Error al buscar películas: " + err.message + "</p>";
             }
         };
 
@@ -292,7 +295,7 @@
             }, 1000);
         };
 
-        // EVENT ROUTER
+        // ENRUTADOR DE EVENTOS
         const matchEvent = (ev, sel) => ev.target.matches(sel);
         const myId = (ev) => Number(ev.target.dataset.myId);
 
@@ -318,7 +321,7 @@
             else if (matchEvent(ev, '.reset'))       resetContr  ();
         });
 
-        // TAREA 5: Evento para buscar al pulsar la tecla Enter en el input de búsqueda
+        // TAREA 5: Evento para buscar al pulsar la tecla Enter en el campo de texto de búsqueda
         document.addEventListener('keyup', ev => {
             if (ev.key === 'Enter' && matchEvent(ev, '#query')) {
                 let query = document.getElementById('query').value;
@@ -326,13 +329,13 @@
             }
         });
         
-        // Initialization        
+        // Inicialización        
         document.addEventListener('DOMContentLoaded', indexContr);
     </script>
 </head>
 
 <body>
-    <h1>My Favourite Movies</h1>
-    <div id="main"> <!-- The view is included here --> </div>
+    <h1>Mis Películas Favoritas</h1>
+    <div id="main"> <!-- La vista se inyecta aquí --> </div>
 </body>
 </html>
