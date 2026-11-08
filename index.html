@@ -1,0 +1,338 @@
+<!doctype html><html><head><meta charset="utf-8">
+    <title>My Favourite Movies</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        body { --primary: #6200ee; --secondary: #29b6f6; margin: 0px;}
+        * {font-family: 'Roboto', sans-serif;}
+        button { 
+            -webkit-font-smoothing: antialiased;
+            display: inline-block;
+            text-decoration: none;
+            margin: 2px;
+            color: var(--primary);
+            background: white;
+            border: 1px solid var(--primary);
+            height: 20px;
+            font-size: 9px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: ease-in 0.2s all;
+            padding: 0 8px 0 8px;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        div#main {padding: 10px;}
+        input {margin-bottom: 5px; margin-top: 2px; padding: 4px; font-size: 12px; }
+        h1 {background: var(--primary); color: white; font-weight: 300; text-transform: uppercase; font-size: 20px; margin: 0px; padding: 15px;}
+        h2 { margin-block-start: 0px; margin-block-end: 10px; font-size: 20px;  color: var(--primary);}
+        button:hover:not(:disabled) { background: var(--primary); color: white; }
+        div.actions { margin-top: 10px;}
+        div.movie {display: inline-block; width: auto; padding: 10px; box-shadow: 2px 2px 7px #ccc; margin: 5px; vertical-align: top;}
+        div.movie div.movie-img {width: 200px; height: auto; min-height: 200px; cursor: pointer;}
+        div.movie div.movie-img img {width: 100%; height: auto;}
+        div.movie div.title {text-align: center; overflow: hidden; text-overflow: ellipsis; width: 200px; white-space: nowrap; }
+        div.field {color: var(--primary); text-transform: uppercase; font-size: 12px;}
+    </style>
+
+    <script type="text/javascript">
+
+       // CONSTANTES Y CONFIGURACIÓN TMDb
+       const TMDB_API_KEY = "e0241fcaa51984680dbe02c90fcccd8c";
+       const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w200";
+
+       // DATA MODEL
+       let initial_movies = [
+        { title: "Superlópez", director: "Javier Ruiz Caldera", thumbnail: "files/superlopez.png" },
+        { title: "Jurassic Park", director: "Steven Spielberg", thumbnail: "files/jurassicpark.png" },
+        { title: "Interstellar", director: "Christopher Nolan", thumbnail: "files/interstellar.png" }
+       ];
+
+       localStorage.my_movies = localStorage.my_movies || JSON.stringify(initial_movies);
+
+        // VIEWS
+        const indexView = (movies) => {
+            let i=0;
+            let view = "";
+
+            while(i < movies.length) {
+              view += `
+                <div class="movie">
+                   <div class="movie-img">
+                        <img data-my-id="${i}" src="${movies[i].thumbnail}" onerror="this.src='files/noimage.png'"/>
+                   </div>
+                   <div class="title">
+                       ${movies[i].title || "<em>No title</em>"}
+                   </div>
+                   <div class="actions">
+                        <button class="show" data-my-id="${i}">Show</button>
+                        <button class="edit" data-my-id="${i}">Edit</button>
+                        <button class="delete" data-my-id="${i}">Delete</button>
+                    </div>
+                </div>\n`;
+              i = i + 1;
+            };
+
+            view += `<div class="actions">
+                        <button class="new">Add</button>
+                        <button class="search-view">Search TMDb</button>
+                        <button class="reset">Reset</button>
+                    </div>`;
+
+            return view;
+        };
+
+        const editView = (i, movie) => {
+            return `<h2>Edit Movie </h2>
+                <div class="field">
+                Title <br>
+                <input type="text" id="title" placeholder="Title" value="${movie.title}">
+                </div>
+                <div class="field">
+                Director <br>
+                <input type="text" id="director" placeholder="Director" value="${movie.director}">
+                </div>
+                <div class="field">
+                Thumbnail <br>
+                <input type="text" id="thumbnail" placeholder="Thumbnail URL" value="${movie.thumbnail}">
+                </div>
+                <div class="actions">
+                    <button class="update" data-my-id="${i}">Update</button>
+                    <button class="index">Back</button>
+                </div>`;
+        }
+
+        const showView = (movie) => {
+            return `
+             <p>
+                La película <strong>${movie.title}</strong> fue dirigida por <strong>${movie.director}</strong>.
+             </p>
+             <div class="actions">
+                <button class="index">Back</button>
+             </div>`;
+        }
+
+        const newView = () => {
+            return `<h2>Create Movie</h2>
+                <div class="field">
+                Title <br>
+                <input type="text" id="title" placeholder="Title">
+                </div>
+                <div class="field">
+                Director <br>
+                <input type="text" id="director" placeholder="Director">
+                </div>
+                <div class="field">
+                Thumbnail <br>
+                <input type="text" id="thumbnail" placeholder="Thumbnail URL">
+                </div>
+                <div class="actions">
+                    <button class="create">Create</button>
+                    <button class="index">Back</button>
+                </div>`;
+        }
+
+        // TAREA 1: Vista de Búsqueda
+        const searchView = () => {
+            return `<h2>Search Movie in TMDb</h2>
+                <div class="field">
+                Title to search <br>
+                <input type="text" id="query" placeholder="Enter movie title...">
+                </div>
+                <div class="actions">
+                    <button class="search">Search</button>
+                    <button class="index">Back</button>
+                </div>
+                <div id="results"></div>`;
+        };
+
+        // TAREA 3: Vista de Resultados de Búsqueda
+        const resultsView = (results) => {
+            if (!results || results.length === 0) {
+                return `<p>No movies found matching your search term.</p>`;
+            }
+
+            let view = `<h3>Search Results</h3>`;
+            let i = 0;
+            while (i < results.length) {
+                let m = results[i];
+                let poster = m.poster_path ? (TMDB_IMAGE_BASE + m.poster_path) : 'files/noimage.png';
+                let release = m.release_date || 'N/A';
+                let titleClean = (m.title || '').replace(/"/g, '&quot;');
+                
+                view += `
+                <div class="movie">
+                   <div class="movie-img">
+                        <img src="${poster}" onerror="this.src='files/noimage.png'"/>
+                   </div>
+                   <div class="title">
+                       ${m.title || "<em>No title</em>"}
+                   </div>
+                   <p style="font-size:10px; margin:4px 0;">Release: ${release}</p>
+                   <div class="actions">
+                        <button class="add-from-api" 
+                                data-title="${titleClean}" 
+                                data-thumbnail="${poster}">Add</button>
+                    </div>
+                </div>\n`;
+                i = i + 1;
+            }
+            return view;
+        };
+
+        // CONTROLLERS 
+        const indexContr = () => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            document.getElementById('main').innerHTML = indexView(my_movies);
+        };
+
+        const showContr = (i) => {
+            let movie = JSON.parse(localStorage.my_movies)[i];
+            document.getElementById('main').innerHTML = showView(movie);
+        };
+
+        const newContr = () => {
+            document.getElementById('main').innerHTML = newView();
+        };
+
+        const createContr = () => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            let new_movie = {
+                title: document.getElementById('title').value,
+                director: document.getElementById('director').value,
+                thumbnail: document.getElementById('thumbnail').value
+            };
+            my_movies.push(new_movie);
+            localStorage.my_movies = JSON.stringify(my_movies);
+            indexContr();
+        };
+
+        const editContr = (i) => {
+            let movie = JSON.parse(localStorage.my_movies)[i];
+            document.getElementById('main').innerHTML = editView(i, movie);
+        };
+
+        const updateContr = (i) => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+            my_movies[i].title    = document.getElementById('title').value;
+            my_movies[i].director  = document.getElementById('director').value;
+            my_movies[i].thumbnail = document.getElementById('thumbnail').value;
+            localStorage.my_movies = JSON.stringify(my_movies);
+            indexContr();
+        };
+
+        const deleteContr = (i) => {
+            if (confirm("¿Estás seguro de que deseas eliminar esta película?")) {
+                let my_movies = JSON.parse(localStorage.my_movies);
+                my_movies.splice(i, 1);
+                localStorage.my_movies = JSON.stringify(my_movies);
+                indexContr();
+            }
+        };
+
+        const resetContr = () => {
+            localStorage.my_movies = JSON.stringify(initial_movies);
+            indexContr();
+        };
+
+        const searchViewContr = () => {
+            document.getElementById('main').innerHTML = searchView();
+        };
+
+        // TAREA 2: Controlador para buscar películas mediante la API de TMDb
+        const searchContr = async (query) => {
+            let resultsDiv = document.getElementById('results');
+            if (!query || query.trim() === "") {
+                alert("Por favor, introduce un término de búsqueda válido.");
+                return;
+            }
+
+            resultsDiv.innerHTML = "<p>Loading results...</p>";
+
+            try {
+                let url = "https://api.themoviedb.org/3/search/movie?api_key=" + TMDB_API_KEY + "&query=" + encodeURIComponent(query.trim());
+                let response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error("HTTP Status " + response.status);
+                }
+                let data = await response.json();
+                resultsDiv.innerHTML = resultsView(data.results);
+            } catch (err) {
+                resultsDiv.innerHTML = "<p>Error searching movies: " + err.message + "</p>";
+            }
+        };
+
+        // TAREA 4: Añadir película desde la API a la base de datos local
+        const addFromAPIContr = (btn, title, thumbnail) => {
+            let my_movies = JSON.parse(localStorage.my_movies);
+
+            // Comprobar si ya existe para evitar duplicados
+            let exists = my_movies.some(m => m.title.toLowerCase() === title.toLowerCase());
+            if (exists) {
+                alert("La película '" + title + "' ya está en tu lista local.");
+                return;
+            }
+
+            // Deshabilitar botón temporalmente para evitar doble clic
+            btn.disabled = true;
+
+            let new_movie = {
+                title: title,
+                director: "TMDb API",
+                thumbnail: thumbnail
+            };
+
+            my_movies.push(new_movie);
+            localStorage.my_movies = JSON.stringify(my_movies);
+            alert("¡Película '" + title + "' añadida a tu lista local correctamente!");
+
+            setTimeout(() => {
+                btn.disabled = false;
+            }, 1000);
+        };
+
+        // EVENT ROUTER
+        const matchEvent = (ev, sel) => ev.target.matches(sel);
+        const myId = (ev) => Number(ev.target.dataset.myId);
+
+        document.addEventListener('click', ev => {
+            if      (matchEvent(ev, '.index'))       indexContr  ();
+            else if (matchEvent(ev, '.edit'))        editContr   (myId(ev));
+            else if (matchEvent(ev, '.update'))      updateContr (myId(ev));
+            else if (matchEvent(ev, '.show'))        showContr   (myId(ev));
+            else if (matchEvent(ev, '.new'))         newContr    ();
+            else if (matchEvent(ev, '.search-view')) searchViewContr();
+            else if (matchEvent(ev, '.search')) {
+                let query = document.getElementById('query').value;
+                searchContr(query);
+            }
+            else if (matchEvent(ev, '.add-from-api')) {
+                let btn = ev.target;
+                let title = btn.dataset.title;
+                let thumbnail = btn.dataset.thumbnail;
+                addFromAPIContr(btn, title, thumbnail);
+            }
+            else if (matchEvent(ev, '.create'))      createContr ();
+            else if (matchEvent(ev, '.delete'))      deleteContr (myId(ev));
+            else if (matchEvent(ev, '.reset'))       resetContr  ();
+        });
+
+        // TAREA 5: Evento para buscar al pulsar la tecla Enter en el input de búsqueda
+        document.addEventListener('keyup', ev => {
+            if (ev.key === 'Enter' && matchEvent(ev, '#query')) {
+                let query = document.getElementById('query').value;
+                searchContr(query);
+            }
+        });
+        
+        // Initialization        
+        document.addEventListener('DOMContentLoaded', indexContr);
+    </script>
+</head>
+
+<body>
+    <h1>My Favourite Movies</h1>
+    <div id="main"> <!-- The view is included here --> </div>
+</body>
+</html>
